@@ -46,6 +46,8 @@ done > $DATADIR/secrets.txt
 # 	sudo docker pull $TARGETACCOUNTID.dkr.ecr.us-east-1.amazonaws.com/$r:$TAG
 # done
 
+# This can be useful later
+aws sqs list-queues  | jq .QueueUrls -r > $DATADIR/SQS-Queues.json
 
 # DNS Enum
 echo "Doing Route53 Enum"

