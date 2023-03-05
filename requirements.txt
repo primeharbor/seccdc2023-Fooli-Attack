@@ -1,0 +1,7 @@
+PyJWT==1.7.1
+urllib3
+boto3
+virtualenv
+# jupyter
+requests
+requests_toolbelt

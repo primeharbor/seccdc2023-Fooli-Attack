@@ -1,0 +1,9 @@
+data/*
+exfil-data/*
+.env
+*-creds.env
+*_creds.json
+.DS_Store
+LambdaURLs.txt
+Private.md
+fooli-attack-tools/

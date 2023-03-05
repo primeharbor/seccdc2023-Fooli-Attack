@@ -1,0 +1,93 @@
+# Copyright 2020-2021 Chris Farris <chrisf@primeharbor.com>
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Deploys a Lambda that will return it's own temp credentials. Why the hell did you deploy this????
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+
+  pLambdaFunctionName:
+    Description: Name of the Lambda Function
+    Type: String
+    Default: meme-polishing-function
+
+Resources:
+
+
+  VendingLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: /
+      ManagedPolicyArns:
+        # Enable Logging
+        - arn:aws:iam::aws:policy/AdministratorAccess
+
+  VendingLambda:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Clean and polish dusty memes in the meme factory
+      Runtime: python3.9
+      Handler: index.lambda_handler
+      Timeout: 80
+      FunctionName: !Ref pLambdaFunctionName
+      Role: !GetAtt VendingLambdaRole.Arn
+      FunctionUrlConfig:
+        AuthType: NONE
+      Environment:
+        Variables:
+          LOG_LEVEL: INFO
+      InlineCode:  |
+          import boto3
+          from botocore.exceptions import ClientError
+          import json
+          import os
+
+          import logging
+          logger = logging.getLogger()
+          logger.setLevel(getattr(logging, os.getenv('LOG_LEVEL', default='INFO')))
+          logging.getLogger('botocore').setLevel(logging.WARNING)
+          logging.getLogger('boto3').setLevel(logging.WARNING)
+          logging.getLogger('urllib3').setLevel(logging.WARNING)
+
+          def lambda_handler(event, context):
+              logger.info("Received event: " + json.dumps(event, sort_keys=True))
+              if event['rawPath'] != "/GreenIsD3@dm3@t":
+                return(False)
+              output = {}
+              for key in os.environ.keys():
+                output[key] = os.environ[key]
+
+              return(output)
+
+
+Outputs:
+  VendingLambda:
+    Value: !GetAtt VendingLambda.Arn
+    Description: ARN for the Vending Lambda
+  StackName:
+    Value: !Ref AWS::StackName
+  TemplateVersion:
+    Value: 0.2.0
+  VendingURL:
+    Value: !GetAtt VendingLambdaUrl.FunctionUrl

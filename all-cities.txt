@@ -1,0 +1,10 @@
+moscow
+lisbon
+berlin
+denver
+helsinki
+nairobi
+oslo
+palermo
+rio
+tokyo
